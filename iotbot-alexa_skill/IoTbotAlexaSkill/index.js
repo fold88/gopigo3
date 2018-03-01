@@ -1,5 +1,5 @@
 var AWS = require('aws-sdk');
-var iotdata = new AWS.IotData({endpoint: 'XXXXXXXXXXXXXX.iot.<region>.amazonaws.com', region: '<region>'});
+var iotdata = new AWS.IotData({endpoint: 'a3bhx5wqimiehh.iot.us-west-2.amazonaws.com', region: 'us-west-2'});
 var topic = "$aws/things/IoTbot/shadow/update";
 var stop = "{\"state\": {\"reported\": {\"stop\": \"true\",\"forward\": \"false\",\"left\": \"false\",\"right\": \"false\",\"back\": \"false\",\"picture\": \"false\",\"lookLeft\": \"false\",\"lookRight\": \"false\"}}}";
 var forward = "{\"state\": {\"reported\": {\"stop\": \"false\",\"forward\": \"true\",\"left\": \"false\",\"right\": \"false\",\"back\": \"false\",\"picture\": \"false\",\"lookLeft\": \"false\",\"lookRight\": \"false\"}}}";
@@ -20,10 +20,6 @@ exports.handler = function (event, context) {
          * prevent someone else from configuring a skill that sends requests to this function.
          */
         
-        if (event.session.application.applicationId !== "<Alexa Skill Application ID>") {
-             context.fail("Invalid Application ID");
-        }
-        
         if (event.session.new) {
             onSessionStarted({requestId: event.request.requestId}, event.session);
         }
@@ -35,7 +31,7 @@ exports.handler = function (event, context) {
                     context.succeed(buildResponse(sessionAttributes, speechletResponse));
                 });
         } else if (event.request.type === "IntentRequest") {
-            iotAction(event.request.intent.slots.Command.value, function(response){
+            iotAction(context, event.request.intent.slots.Command.value, function(response){
                 if (response !== null){
                     onIntent(event.request,
                         event.session,
@@ -103,13 +99,17 @@ function setCommandInSession(intent, session, callback) {
 
     if (commandSlot) {
         var command = commandSlot.value;
+        if (command === "cancel" || command === "exit" || command === "deactivate") {
+            shouldEndSession = true;
+            repromptText = "";
+        }
         sessionAttributes = createcommandAttributes(command);
-        speechOutput = "IoTbot " + command + " command ";
-        repromptText = "Do you want the robot to do anything else for you?";
+        speechOutput = "Robot car momo " + command + " command ";
+        repromptText = "Do you want momo to do anything else for you?";
     } else {
         speechOutput = "I didn't quite understand. Please try again";
         repromptText = "Still not sure " +
-            "You can try by saying, ask the robot to take a picture";
+            "You can try by saying, ask robot car momo to turn right";
     }
 
     callback(sessionAttributes,
@@ -122,7 +122,7 @@ function createcommandAttributes(command) {
     };
 }
 
-function iotAction(command,callback){
+function iotAction(context, command,callback){
         switch (command) {
         case 'forward':
             params = {
@@ -135,6 +135,7 @@ function iotAction(command,callback){
               else     return callback(data);          // successful response
             });
             break;
+        case 'backward':
         case 'back':
             params = {
               topic: topic,
@@ -212,9 +213,12 @@ function iotAction(command,callback){
               if (err) console.log(err, err.stack); // an error occurred
               else     return callback(data);       // successful response
             });
-            break;    
+	    break;    
         default:
-            context.fail(new Error('Unrecognized operation "' + operation + '"'));
+            //context.fail(new Error('Unrecognized operation "' + command + '"'));
+            console.log('Unrecognized operation "' + command + '"');
+            var data = {};
+            return callback(data);
     }
 
 
@@ -236,13 +240,27 @@ function getWelcomeResponse(callback) {
     // If we wanted to initialize the session to have some attributes we could add those here.
     var sessionAttributes = {};
     var cardTitle = "Welcome";
-    var speechOutput = "Welcome to the IoTbot on Alexa, " +
-        "Please tell me what you want the robot to do";
+    var speechOutput = "Welcome, I am robot car momo. " +
+        "Please tell me where to go";
     // If the user either does not reply to the welcome message or says something that is not
     // understood, they will be prompted again with this text.
     var repromptText = "Please tell me the command by saying, " +
-        "ask the robot to take a picture or ask the robot to look right";
+        "ask robot car momo to go forward or ask robot car momo to turn right";
     var shouldEndSession = false;
+
+    callback(sessionAttributes,
+        buildSpeechletResponse(cardTitle, speechOutput, repromptText, shouldEndSession));
+}
+
+function getGoodbyeResponse(callback) {
+    // If we wanted to initialize the session to have some attributes we could add those here.
+    var sessionAttributes = {};
+    var cardTitle = "Goodbye";
+    var speechOutput = "Goodbye";
+    // If the user either does not reply to the welcome message or says something that is not
+    // understood, they will be prompted again with this text.
+    var repromptText = "Goodbye";
+    var shouldEndSession = true;
 
     callback(sessionAttributes,
         buildSpeechletResponse(cardTitle, speechOutput, repromptText, shouldEndSession));

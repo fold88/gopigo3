@@ -61,11 +61,12 @@ robot.init()
 
 //Add your certificates and region details in the file system
 var device = awsIot.device({
-   keyPath: "xxxxxxxxxx-private.pem.key",
-  certPath: "xxxxxxxxxx-certificate.pem.crt",
-    caPath: "VeriSign-Class 3-Public-Primary-Certification-Authority-G5.pem",
+   keyPath: "6ac720db5d-private.pem.key",
+  certPath: "6ac720db5d-certificate.pem.crt",
+    caPath: "root-CA.crt",
   clientId: "IoTbot",
-    region: "<AWS IoT Region>"
+    region: "us-west-2",
+      host: "a3bhx5wqimiehh.iot.us-west-2.amazonaws.com"
 });
 
 //Initializing Shadow State
